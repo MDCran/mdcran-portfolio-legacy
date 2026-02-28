@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CRITICAL SYSTEM FAILURE</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: #000;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            animation: bg-glitch 4s infinite;
+        }
+        @keyframes bg-glitch {
+            0%, 100% { background-color: #000; }
+            15% { background-color: #300; }
+            30% { background-color: #003; filter: hue-rotate(90deg); }
+            45% { background-color: #030; }
+        }
+        .header {
+            background: rgba(80, 0, 0, 0.9);
+            color: #f00;
+            text-align: center;
+            padding: 1rem;
+            font-size: clamp(18px, 5vw, 28px);
+            font-weight: bold;
+            border-bottom: 3px solid #f00;
+            animation: header-blink 0.8s infinite;
+        }
+        @keyframes header-blink {
+            0%, 100% { background: rgba(80, 0, 0, 0.9); }
+            50% { background: rgba(150, 0, 0, 1); }
+        }
+        .console {
+            flex: 1;
+            padding: 1.5rem;
+            font-size: clamp(14px, 3.8vw, 19px);
+            line-height: 1.6;
+            overflow-y: auto;
+            position: relative;
+        }
+        .terminal-progress {
+            color: #ff0;
+            margin: 0.8rem 0;
+        }
+        .error { color: #f00; font-weight: bold; animation: blink 0.5s infinite; }
+        @keyframes blink { 50% { opacity: 0.2; } }
+        .scan-line { color: #ff0; }
+        .countdown { color: #f00; font-size: clamp(20px, 6vw, 32px); text-align: center; margin: 1rem 0; }
+        .final-countdown { color: #f00; font-size: clamp(28px, 8vw, 48px); text-align: center; margin: 2rem 0; font-weight: bold; }
+        .overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(0,255,0,0.04) 0px, rgba(0,255,0,0.04) 2px, transparent 2px, transparent 4px);
+            pointer-events: none;
+            animation: scan 5s linear infinite;
+        }
+        @keyframes scan { 0% { background-position: 0 0; } 100% { background-position: 0 200%; } }
+    </style>
+</head>
+<body>
+    <div class="header">!!! SYSTEM COMPROMISED - PAY OR LOSE EVERYTHING !!!</div>
+    <div class="console" id="console"></div>
+    <div class="overlay"></div>
+    <script>
+        const consoleDiv = document.getElementById('console');
+        function addLine(text, className = '') {
+            const line = document.createElement('div');
+            if (className) line.className = className;
+            line.textContent = text;
+            consoleDiv.appendChild(line);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        function createTerminalProgress(label, id) {
+            const line = document.createElement('div');
+            line.className = 'terminal-progress';
+            line.id = id;
+            line.textContent = `${label} [>                                                  ]   0%`;
+            consoleDiv.appendChild(line);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        function updateTerminalProgress(id, percent) {
+            const line = document.getElementById(id);
+            if (!line) return;
+            const barLength = 50;
+            const filled = Math.round((percent / 100) * barLength);
+            const empty = barLength - filled;
+            const bar = '='.repeat(filled) + (percent < 100 ? '>' : '=') + '-'.repeat(empty);
+            line.textContent = line.textContent.split(' [')[0] + ` [${bar}] ${Math.floor(percent)}%`;
+        }
+        let countdownInterval;
+        function startCountdown() {
+            addLine('Payment deadline:', 'scan-line');
+            const timerLine = document.createElement('div');
+            timerLine.className = 'countdown';
+            timerLine.id = 'timer-line';
+            timerLine.innerHTML = '<span id="timer">23:59:59</span>';
+            consoleDiv.appendChild(timerLine);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            let seconds = 23 * 3600 + 59 * 60 + 59;
+            countdownInterval = setInterval(() => {
+                seconds--;
+                if (seconds <= 0) {
+                    clearInterval(countdownInterval);
+                    return;
+                }
+                const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
+                const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+                const s = String(seconds % 60).padStart(2, '0');
+                document.getElementById('timer').textContent = `${h}:${m}:${s}`;
+            }, 1000);
+        }
+      
+        async function fetchIPInfo() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                addLine(`Target IP detected: ${data.ip}`, 'error');
+                addLine(`Location: ${data.city}, ${data.region}, ${data.country_name}`, 'error');
+                addLine(`ISP / Organization: ${data.org || 'Unknown'}`, 'error');
+                addLine(`Coordinates: ${data.latitude}, ${data.longitude}`, 'error');
+                addLine(`Timezone: ${data.timezone}`, 'error');
+                addLine('');
+                addLine('Personalized attack initiated based on your location...', 'error');
+            } catch (err) {
+                addLine('IP detection failed (VPN detected?) - Proceeding with generic payload...', 'error');
+            }
+        }
+
+        const steps = [
+            { type: 'text', content: 'SECURITY BREACH DETECTED - ORIGIN: UNKNOWN IP', class: 'error' },
+            { type: 'ipfetch' },
+            { type: 'text', content: 'Bypassing antivirus... SUCCESS' },
+            { type: 'text', content: 'Gaining root access...' },
+            { type: 'progress', label: 'Extracting passwords & cookies...        ', id: 'prog1', target: 100, duration: 1500 },
+            { type: 'progress', label: 'Uploading browser data to C2 server...   ', id: 'prog2', target: 100, duration: 2500 },
+            { type: 'progress', label: 'Encrypting personal files (ransomware)...', id: 'prog3', target: 100, duration: 2000 },
+            { type: 'progress', label: 'Exfiltrating photos & private videos...  ', id: 'prog4', target: 100, duration: 10000 },
+            { type: 'progress', label: 'Dumping banking credentials...          ', id: 'prog5', target: 100, duration: 3000 },
+            { type: 'text', content: 'Webcam & microphone activated - Recording in progress', class: 'error' },
+            { type: 'text', content: 'Total control achieved. Send $5000 BTC to:' },
+            { type: 'text', content: '1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2', class: 'scan-line' },
+            { type: 'countdown' },
+            { type: 'text', content: '...' },
+            { type: 'text', content: 'Just kidding. 😏', class: 'error' },
+            { type: 'redirect_countdown' }
+        ];
+        let currentStep = 0;
+        async function runNextStep() {
+            if (currentStep >= steps.length) return;
+            const step = steps[currentStep];
+            if (step.type === 'text') {
+                addLine(step.content, step.class || 'scan-line');
+                currentStep++;
+                setTimeout(runNextStep, step.content.includes('...') ? 3000 : 1400);
+            } 
+            else if (step.type === 'progress') {
+                createTerminalProgress(step.label, step.id);
+                let percent = 0;
+                const increment = 100 / (step.duration / 100);
+                const interval = setInterval(() => {
+                    percent += Math.random() * increment + increment * 0.5;
+                    if (percent >= step.target) {
+                        percent = step.target;
+                        updateTerminalProgress(step.id, percent);
+                        clearInterval(interval);
+                        currentStep++;
+                        setTimeout(runNextStep, 1000);
+                    } else {
+                        updateTerminalProgress(step.id, percent);
+                    }
+                }, 100);
+            }
+            else if (step.type === 'countdown') {
+                startCountdown();
+                currentStep++;
+                setTimeout(runNextStep, 2000);
+            }
+            else if (step.type === 'ipfetch') {
+                await fetchIPInfo();
+                currentStep++;
+                setTimeout(runNextStep, 2000);
+            }
+            else if (step.type === 'redirect_countdown') {
+                addLine('');
+                const finalLine = document.createElement('div');
+                finalLine.className = 'final-countdown';
+                finalLine.id = 'final-countdown';
+                finalLine.textContent = 'Redirecting in 5';
+                consoleDiv.appendChild(finalLine);
+                consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                let count = 5;
+                const finalInterval = setInterval(() => {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(finalInterval);
+                        window.location.href = 'https://mdcran.com';
+                    } else {
+                        finalLine.textContent = `Redirecting in ${count}`;
+                    }
+                }, 1000);
+            }
+        }
+       
+        runNextStep();
+    
+        setTimeout(() => alert('CRITICAL: Your device has been compromised!'), 5000);
+
+
+        function beep() {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            osc.type = 'sawtooth';
+            osc.frequency.value = 900;
+            osc.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.07);
+        }
+        setInterval(beep, 800);
+ 
+        setTimeout(() => {
+            let shakes = 0;
+            const shaker = setInterval(() => {
+                window.moveBy(Math.random() * 20 - 10, Math.random() * 20 - 10);
+                shakes++;
+                if (shakes > 40) clearInterval(shaker);
+            }, 70);
+        }, 9000);
+    </script>
+</body>
+</html>
